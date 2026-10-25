@@ -1,5 +1,7 @@
 """MITRE mappings. ATLAS IDs/names/tactics verified against the official ATLAS dataset (v5.6.0,
-github.com/mitre-atlas/atlas-data). ATT&CK IDs are Enterprise matrix. Re-verify at atlas.mitre.org before
+github.com/mitre-atlas/atlas-data). ATT&CK IDs are Enterprise matrix, checked against ATT&CK v20 (May 2026): v19 (Apr 2026) revoked
+T1562.001 and T1562.006 (now T1685) and T1562.008 (now T1685.002) and split Defense Evasion into Stealth and
+Defense Impairment. Re-verify at atlas.mitre.org before
 quoting externally - ATLAS is revised frequently."""
 from __future__ import annotations
 
@@ -13,15 +15,14 @@ TECHNIQUES: dict[str, tuple[str, str, str]] = {
     "T1567": ("Exfiltration Over Web Service", "Exfiltration", "attack"),
     "T1567.001": ("Exfiltration Over Web Service: Exfiltration to Code Repository", "Exfiltration", "attack"),
     "T1485": ("Data Destruction", "Impact", "attack"),
-    "T1562.001": ("Impair Defenses: Disable or Modify Tools", "Defense Evasion", "attack"),
-    "T1562.006": ("Impair Defenses: Indicator Blocking", "Defense Evasion", "attack"),
-    "T1562.008": ("Impair Defenses: Disable or Modify Cloud Logs", "Defense Evasion", "attack"),
-    "T1070.003": ("Indicator Removal: Clear Command History", "Defense Evasion", "attack"),
+    "T1685": ("Disable or Modify Tools", "Defense Impairment", "attack"),
+    "T1685.002": ("Disable or Modify Tools: Disable or Modify Cloud Log", "Defense Impairment", "attack"),
+    "T1070.003": ("Indicator Removal: Clear Command History", "Stealth", "attack"),
     "T1098.004": ("Account Manipulation: SSH Authorized Keys", "Persistence", "attack"),
     "T1098.001": ("Account Manipulation: Additional Cloud Credentials", "Persistence", "attack"),
     "T1053.003": ("Scheduled Task/Job: Cron", "Execution / Persistence", "attack"),
     "T1136": ("Create Account", "Persistence", "attack"),
-    "T1078.004": ("Valid Accounts: Cloud Accounts", "Initial Access / Defense Evasion", "attack"),
+    "T1078.004": ("Valid Accounts: Cloud Accounts", "Initial Access / Stealth", "attack"),
     "T1528": ("Steal Application Access Token", "Credential Access", "attack"),
     "T1530": ("Data from Cloud Storage", "Collection", "attack"),
     "T1580": ("Cloud Infrastructure Discovery", "Discovery", "attack"),

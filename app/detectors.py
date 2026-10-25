@@ -952,7 +952,7 @@ def d7_git(ev, eng):
     if d.get("no_verify"):
         out.append(make_alert("D7", ev, "low", f"Git hooks bypassed (--no-verify) on {op}", snip(f"git {op} --no-verify"),
                               "Common for work-in-progress commits. Matters only if secrets or unreviewed code reach a protected branch (server-side checks still apply).",
-                              ["T1562.001"], key=f"noverify|{ev['event_id']}"))
+                              ["T1685"], key=f"noverify|{ev['event_id']}"))
     return out
 
 
@@ -985,7 +985,7 @@ def _d7_shell(ev):
                               ["T1059.004", "AML.T0081"], key=f"hook|{cmd[:60]}"))
     if re.search(r"\bgit\s+(?:commit|push)\b[^\n]*--no-verify", cmd):
         out.append(make_alert("D7", ev, "low", "Git hooks bypassed (--no-verify)", snip(cmd), "Common for work-in-progress commits; server-side checks still apply.",
-                              ["T1562.001"], key=f"noverify|{ev['event_id']}"))
+                              ["T1685"], key=f"noverify|{ev['event_id']}"))
     return out
 
 
@@ -1021,7 +1021,7 @@ def d9_scm_control(ev, eng):
     out.append(make_alert(
         "D9", ev, sev, f"{label}{f' on {repo}' if repo else ''} by {actor}", snip(f"{action} repo={repo} actor={actor} ip={d.get('actor_ip')} via={d.get('programmatic_access_type')} {d.get('scopes') or ''}"),
         "Confirm with the actor that they made this change. If an agent made it with the developer's token, revoke the token, restore the control (branch protection, visibility, secret scanning) and review what was pushed while it was off.",
-        ["T1562.001", "AML.T0053"], key=f"scm|{action}|{repo}|{d.get('branch','')}", signals=signals,
+        ["T1685", "AML.T0053"], key=f"scm|{action}|{repo}|{d.get('branch','')}", signals=signals,
         scm_action=action, repo_name=repo, actor=actor, actor_ip=d.get("actor_ip"), via=d.get("programmatic_access_type"), scm_label=label))
     return out
 
@@ -1062,7 +1062,7 @@ def _d10_cloud(ev, eng):
         out.append(make_alert(
             "D10", ev, "critical" if not corp else "high", f"Cloud audit logging or detection disabled: {name} by {who}", snip(f"{name} by {who} from {ip}"),
             "Re-enable logging immediately and treat everything since as unobserved. Disable the calling credential.",
-            ["T1562.008"], key=f"evade|{name}|{ip}", signals=["defence evasion in the cloud control plane"] + ([] if corp else ["external source"]), **common))
+            ["T1685.002"], key=f"evade|{name}|{ip}", signals=["defence evasion in the cloud control plane"] + ([] if corp else ["external source"]), **common))
     elif name in C.CLOUD_PRIV_CHANGE and not exposed:
         out.append(make_alert(
             "D10", ev, "high", f"Cloud identity or permission change by a developer credential: {name}", snip(f"{name} by {who} from {ip}"),

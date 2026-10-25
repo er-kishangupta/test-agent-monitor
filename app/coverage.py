@@ -9,7 +9,7 @@ from .catalog import LOGIC, RULE_CATALOG
 from .mitre import TECHNIQUES, technique
 
 ATTACK_TACTICS = ["Reconnaissance", "Resource Development", "Initial Access", "Execution", "Persistence", "Privilege Escalation",
-                  "Defense Evasion", "Credential Access", "Discovery", "Lateral Movement", "Collection", "Command and Control",
+                  "Stealth", "Defense Impairment", "Credential Access", "Discovery", "Lateral Movement", "Collection", "Command and Control",
                   "Exfiltration", "Impact"]
 # Tactics this monitor does not try to cover, and who does. Stated so an empty column is read as a decision.
 OUT_OF_SCOPE = {
@@ -58,5 +58,5 @@ def build(validation: dict | None = None) -> dict:
         "caveat": ("Coverage of the coding-agent attack surface this monitor watches, not of ATT&CK as a whole. The tick means the labelled corpus "
                    "contains attacks that the mapped rule catches. The evidence is per rule, not per technique (a rule that maps to three techniques shows the same count on each), "
                    "and the corpus is synthetic and written by the rule authors. "
-                   "ID mappings for D8 to D10 and C3 were checked from memory and search: re-verify at attack.mitre.org and atlas.mitre.org."),
+                   "ATT&CK IDs were checked against ATT&CK v20 (May 2026; v19 revoked the T1562 sub-techniques used earlier) and ATLAS IDs against dataset v5.6.0: re-verify at attack.mitre.org and atlas.mitre.org before external use."),
     }

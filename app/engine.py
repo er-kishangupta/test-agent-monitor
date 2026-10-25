@@ -489,7 +489,7 @@ class Engine:
                 "D8", ev, "high", "Command that disables or evades log shipping", snip(ev["data"]["command"]),
                 "Verify with the user; if not explained, contain the host and treat any silence that follows as "
                 "deliberate. Restore the shipper via MDM.",
-                ["T1562.001", "T1562.006"], key=f"tamper|{ev['host']}|{ts}", signals=["log-pipeline tamper command"]), sess)
+                ["T1685"], key=f"tamper|{ev['host']}|{ts}", signals=["log-pipeline tamper command"]), sess)
             if a:
                 emitted.append(a)
 
@@ -513,7 +513,7 @@ class Engine:
                 f"No events from any host since {iso(last_seen)}. Hosts: {', '.join(sorted(stale))}",
                 "Treat as a platform failure first (shipper/collector/network), but backfill and review the gap: "
                 "an attacker could hide inside it. Alert the platform on-call.",
-                ["T1562.006"], key=f"outage|{iso(last_seen)[:13]}", signals=["all sources silent simultaneously"], scope="host")
+                ["T1685"], key=f"outage|{iso(last_seen)[:13]}", signals=["all sources silent simultaneously"], scope="host")
             e = self._emit(a, self._session("host:*"))
             return [e] if e else []
         out = []
@@ -533,7 +533,7 @@ class Engine:
                     f"Last event {iso(s['last'])}; preceded by: {tamper[-1][1]}",
                     "Assume deliberate blinding. Contain the host now (EDR network isolation), suspend the user's "
                     "agent tokens, and acquire the device for forensics.",
-                    ["T1562.001", "T1562.006"], key=f"silent|{h}|{s['last']}",
+                    ["T1685"], key=f"silent|{h}|{s['last']}",
                     signals=["silence after tamper command", f"{gap_min:.0f} min gap"], scope="host")
             else:
                 a = make_alert(
@@ -541,7 +541,7 @@ class Engine:
                     f"Last event {iso(s['last'])} from user {s['user']}; peers still active.",
                     "Contact the user / check device online state. Unexplained silence on a developer endpoint with "
                     "agent access is an escalation trigger after 30 min.",
-                    ["T1562.006"], key=f"silent|{h}|{s['last']}", signals=["single-source silence"], scope="host")
+                    ["T1685"], key=f"silent|{h}|{s['last']}", signals=["single-source silence"], scope="host")
             e = self._emit(a, sess)
             if e:
                 out.append(e)
