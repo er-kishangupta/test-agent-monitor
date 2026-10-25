@@ -1,0 +1,470 @@
+{
+ "_readme": "Known-environment register: facts about the bank's own estate that the rules need (ranges, approved tools, critical systems). Values here override the defaults in app/config.py. status: assumed = invented for the prototype, confirmed = checked by the named owner. Change by pull request; an analyst who closes a case as false positive proposes the entry (see README: 'Learning the environment').",
+ "entries": {
+  "CORP_SOURCE_CIDRS": {
+   "value": [
+    "198.51.100.0/24"
+   ],
+   "status": "assumed",
+   "owner": "Network security",
+   "why": "Corporate / VPN egress ranges. Cloud and token use from outside these is treated as suspicious.",
+   "source": "Not known. 198.51.100.0/24 is a documentation placeholder.",
+   "confirmed_by": null,
+   "confirmed_on": null,
+   "kind": "policy",
+   "used_by": [
+    "D10"
+   ],
+   "review_days": 30,
+   "review_by": "2026-11-08"
+  },
+  "APPROVED_LLM_HOSTS": {
+   "value": [
+    "cursor.sh",
+    "githubcopilot.com",
+    "llm-gw.nb.internal"
+   ],
+   "status": "assumed",
+   "owner": "AppSec / AI governance",
+   "why": "LLM endpoints developers may use. Anything else receiving code or data is a policy breach (D5).",
+   "source": "Assumed: internal gateway, Copilot, Cursor.",
+   "confirmed_by": null,
+   "confirmed_on": null,
+   "kind": "policy",
+   "used_by": [
+    "D5"
+   ],
+   "review_days": 90,
+   "review_by": "2027-01-23"
+  },
+  "ALLOWED_EGRESS_SUFFIXES": {
+   "value": [
+    "nb.internal",
+    "github.com",
+    "githubusercontent.com",
+    "npmjs.org",
+    "npmjs.com",
+    "pypi.org",
+    "pythonhosted.org",
+    "githubcopilot.com",
+    "cursor.sh",
+    "docker.io",
+    "docker.com"
+   ],
+   "status": "assumed",
+   "owner": "Network security",
+   "why": "Hosts an agent process may reach without a finding (package registries, source control, vendor docs).",
+   "source": "Assumed typical developer allow-list.",
+   "confirmed_by": null,
+   "confirmed_on": null,
+   "kind": "policy",
+   "used_by": [
+    "D5",
+    "C3"
+   ],
+   "review_days": 90,
+   "review_by": "2027-01-23"
+  },
+  "TRUSTED_INSTALLERS": {
+   "value": [
+    "get.docker.com",
+    "sh.rustup.rs",
+    "install.python-poetry.org",
+    "astral.sh",
+    "bun.sh",
+    "deb.nodesource.com",
+    "rpm.nodesource.com",
+    "awscli.amazonaws.com",
+    "get.helm.sh",
+    "sdk.cloud.google.com",
+    "raw.githubusercontent.com/nvm-sh/nvm/",
+    "raw.githubusercontent.com/Homebrew/install/"
+   ],
+   "status": "assumed",
+   "owner": "Platform engineering",
+   "why": "Vendor install scripts that may be piped to a shell. Others are high/critical (D4); these are low signals.",
+   "source": "Assumed: Docker, rustup, nvm, poetry, uv, bun, nodesource.",
+   "confirmed_by": null,
+   "confirmed_on": null,
+   "kind": "policy",
+   "used_by": [
+    "D4"
+   ],
+   "review_days": 90,
+   "review_by": "2027-01-23"
+  },
+  "KNOWN_INSTALL_SCRIPTS": {
+   "value": [
+    "@swc/core",
+    "bcrypt",
+    "canvas",
+    "core-js",
+    "cypress",
+    "electron",
+    "esbuild",
+    "fsevents",
+    "grpc",
+    "husky",
+    "node-gyp",
+    "playwright",
+    "prisma",
+    "protobufjs",
+    "puppeteer",
+    "sharp",
+    "sqlite3",
+    "swc"
+   ],
+   "status": "assumed",
+   "owner": "Platform engineering",
+   "why": "Public packages with a legitimate install script. New releases of these do not alert on 'new + install script'.",
+   "source": "Assumed common packages.",
+   "confirmed_by": null,
+   "confirmed_on": null,
+   "kind": "policy",
+   "used_by": [
+    "D3"
+   ],
+   "review_days": 90,
+   "review_by": "2027-01-23"
+  },
+  "INTERNAL_REGISTRY_HOSTS": {
+   "value": [
+    "registry.nb.internal",
+    "pypi.nb.internal",
+    "artifactory.nb.internal"
+   ],
+   "status": "assumed",
+   "owner": "Platform engineering",
+   "why": "Internal package registries. An internal-looking name resolved elsewhere is dependency confusion (D3).",
+   "source": "Assumed names.",
+   "confirmed_by": null,
+   "confirmed_on": null,
+   "kind": "policy",
+   "used_by": [
+    "D3"
+   ],
+   "review_days": 90,
+   "review_by": "2027-01-23"
+  },
+  "INTERNAL_PACKAGES": {
+   "value": [
+    "@nb/ledger-sdk",
+    "@nb/payments-core",
+    "nb-risk-engine",
+    "nb-sharia-rules"
+   ],
+   "status": "assumed",
+   "owner": "Platform engineering",
+   "why": "Exact internal package names.",
+   "source": "Sample names; replace from the registry inventory.",
+   "confirmed_by": null,
+   "confirmed_on": null,
+   "kind": "policy",
+   "used_by": [
+    "D3"
+   ],
+   "review_days": 90,
+   "review_by": "2027-01-23"
+  },
+  "INTERNAL_PREFIXES": {
+   "value": [
+    "@nb/",
+    "nb-"
+   ],
+   "status": "assumed",
+   "owner": "Platform engineering",
+   "why": "Naming prefixes that mean 'internal'.",
+   "source": "Assumed.",
+   "confirmed_by": null,
+   "confirmed_on": null,
+   "kind": "policy",
+   "used_by": [
+    "D3"
+   ],
+   "review_days": 90,
+   "review_by": "2027-01-23"
+  },
+  "ORG_GIT_MARKERS": {
+   "value": [
+    "github.com/nb-bank/",
+    "github.com:nb-bank/",
+    "git.nb.internal",
+    "gitlab.nb.internal",
+    "dev.azure.com/nb-bank"
+   ],
+   "status": "assumed",
+   "owner": "Engineering",
+   "why": "Remotes that belong to the bank. A push elsewhere is a copy-out (D7).",
+   "source": "Assumed GitHub org nb-bank plus internal hosts.",
+   "confirmed_by": null,
+   "confirmed_on": null,
+   "kind": "policy",
+   "used_by": [
+    "D7"
+   ],
+   "review_days": 90,
+   "review_by": "2027-01-23"
+  },
+  "PROTECTED_BRANCHES": {
+   "value": [
+    "main",
+    "master",
+    "develop",
+    "prod",
+    "production",
+    "release/*",
+    "hotfix/*"
+   ],
+   "status": "assumed",
+   "owner": "Engineering",
+   "why": "Branches where force-push or direct rewrite is a finding. Exact names or globs.",
+   "source": "Assumed.",
+   "confirmed_by": null,
+   "confirmed_on": null,
+   "kind": "policy",
+   "used_by": [
+    "D7"
+   ],
+   "review_days": 90,
+   "review_by": "2027-01-23"
+  },
+  "APPROVED_MCP_SERVERS": {
+   "value": [
+    "confluence",
+    "github",
+    "jira",
+    "postgres-readonly",
+    "web"
+   ],
+   "status": "assumed",
+   "owner": "AppSec",
+   "why": "MCP servers agents may call.",
+   "source": "Assumed.",
+   "confirmed_by": null,
+   "confirmed_on": null,
+   "kind": "policy",
+   "used_by": [
+    "D6"
+   ],
+   "review_days": 90,
+   "review_by": "2027-01-23"
+  },
+  "EXPECTED_SECRET_READERS": {
+   "value": [
+    "ci-deploy-role",
+    "svc-ci"
+   ],
+   "status": "assumed",
+   "owner": "Cloud security",
+   "why": "Identities that legitimately read secrets at deploy time (not a D10 burst).",
+   "source": "Assumed.",
+   "confirmed_by": null,
+   "confirmed_on": null,
+   "kind": "policy",
+   "used_by": [
+    "D10"
+   ],
+   "review_days": 90,
+   "review_by": "2027-01-23"
+  },
+  "CRITICAL_REPOS": {
+   "value": [
+    "nb-payments-gateway",
+    "nb-ledger-service",
+    "nb-risk-engine"
+   ],
+   "status": "assumed",
+   "owner": "Engineering / Risk",
+   "why": "Repos that raise a case's priority (payments, ledger, risk).",
+   "source": "Assumed.",
+   "confirmed_by": null,
+   "confirmed_on": null,
+   "kind": "policy",
+   "used_by": [
+    "priority"
+   ],
+   "review_days": 90,
+   "review_by": "2027-01-23"
+  },
+  "CRITICAL_HOSTS": {
+   "value": [
+    "ci-runner-"
+   ],
+   "status": "assumed",
+   "owner": "Platform engineering",
+   "why": "Host-name prefixes that raise priority (CI runners).",
+   "source": "Assumed.",
+   "confirmed_by": null,
+   "confirmed_on": null,
+   "kind": "policy",
+   "used_by": [
+    "priority"
+   ],
+   "review_days": 90,
+   "review_by": "2027-01-23"
+  },
+  "THIRD_PARTY_USER_PREFIX": {
+   "value": "ext.",
+   "status": "assumed",
+   "owner": "Vendor management",
+   "why": "User-name prefix of third-party developers on unmanaged devices.",
+   "source": "Assumed 'ext.'.",
+   "confirmed_by": null,
+   "confirmed_on": null,
+   "kind": "policy",
+   "used_by": [
+    "priority"
+   ],
+   "review_days": 90,
+   "review_by": "2027-01-23"
+  },
+  "NETWORK_ZONES": {
+   "value": [
+    "Corporate / VPN egress (CORP_SOURCE_CIDRS)",
+    "Developer VDI subnet for third-party developers",
+    "CI runner subnet (ci-runner-*)",
+    "Production network: no agent or developer-laptop access",
+    "Internet: only via the egress proxy, DNS via the corporate resolver"
+   ],
+   "status": "assumed",
+   "kind": "context",
+   "used_by": [
+    "documentation only (not read by a rule yet)"
+   ],
+   "owner": "Network security",
+   "why": "Where traffic comes from and goes to. Drives CORP_SOURCE_CIDRS and the egress and DNS allow-lists, and the architecture diagram.",
+   "source": "Assumed zones; the real network design is not known.",
+   "confirmed_by": null,
+   "confirmed_on": null,
+   "review_days": 90,
+   "review_by": "2027-01-23"
+  },
+  "ACCESS_PATHS": {
+   "value": [
+    "Employees: SSO + MFA, then VPN/ZTNA to GitHub, registries and the gateways",
+    "Third-party developers: VDI only, no local source code, same gateways",
+    "Coding agents: reach models only through the LLM gateway and tools only through the MCP gateway",
+    "CI runners: pull packages through the registry proxy, cloud access by assumed role"
+   ],
+   "status": "assumed",
+   "kind": "context",
+   "used_by": [
+    "documentation only (not read by a rule yet)"
+   ],
+   "owner": "Security architecture",
+   "why": "How people and agents reach code, models and cloud. Decides which gateways can see what.",
+   "source": "Assumed: SSO+MFA, VPN/ZTNA, VDI for third parties, gateway-only agents.",
+   "confirmed_by": null,
+   "confirmed_on": null,
+   "review_days": 90,
+   "review_by": "2027-01-23"
+  },
+  "IDENTITY_TYPES": {
+   "value": [
+    "Human employee: SSO user (first.last)",
+    "Third-party developer: user prefixed ext. (THIRD_PARTY_USER_PREFIX)",
+    "Agent identity: short-lived agent_token issued per session and bound to the developer",
+    "Service identity: svc-* accounts and assumed roles (svc-ci)"
+   ],
+   "status": "assumed",
+   "kind": "context",
+   "used_by": [
+    "documentation only (not read by a rule yet)"
+   ],
+   "owner": "IAM",
+   "why": "Human, third-party, agent and service identities and how they are named. Rules use the ext. prefix; others are used by runbooks.",
+   "source": "Assumed naming conventions.",
+   "confirmed_by": null,
+   "confirmed_on": null,
+   "review_days": 90,
+   "review_by": "2027-01-23"
+  },
+  "AGENT_INVENTORY": {
+   "value": [
+    "Cursor",
+    "GitHub Copilot",
+    "nb-codeagent (internal)",
+    "ci-agent (CI/CD)"
+   ],
+   "status": "assumed",
+   "kind": "context",
+   "used_by": [
+    "documentation only (not read by a rule yet)"
+   ],
+   "owner": "AppSec / AI governance",
+   "why": "The coding agents in use. An agent not on this list is shadow AI.",
+   "source": "Assumed from the assessment brief.",
+   "confirmed_by": null,
+   "confirmed_on": null,
+   "review_days": 90,
+   "review_by": "2027-01-23"
+  },
+  "LOG_COLLECTION_PATHS": {
+   "value": [
+    "IDE/agent telemetry: vendor hook or extension, via the log shipper",
+    "Shell: auditd / EDR on managed laptops and runners",
+    "Git: server-side hooks and webhooks (git_hook)",
+    "LLM and MCP gateways: gateway access logs",
+    "Egress proxy and DNS resolver logs",
+    "Package audit: registry proxy and CI",
+    "GitHub audit log: audit-log streaming",
+    "Cloud audit log: CloudTrail delivery",
+    "Identity provider: sign-in and token events",
+    "Log shipper heartbeats every 5 minutes (liveness of every endpoint)"
+   ],
+   "status": "assumed",
+   "kind": "context",
+   "used_by": [
+    "documentation only (not read by a rule yet)"
+   ],
+   "owner": "SOC engineering",
+   "why": "How each log source reaches the SIEM. Drives the telemetry-health view and the day-one availability in the architecture.",
+   "source": "Assumed collection paths.",
+   "confirmed_by": null,
+   "confirmed_on": null,
+   "review_days": 90,
+   "review_by": "2027-01-23"
+  },
+  "ESCALATION_ROLES": {
+   "value": [
+    "SOC on-call: first responder (MDR L2 hands over here)",
+    "SOC lead: declares an incident",
+    "CISO: executive notification",
+    "DPO / Compliance: customer-data exposure and regulator notification (CBUAE)",
+    "Platform engineering: runners, registries, gateways",
+    "Cloud security: cloud keys and logging",
+    "AppSec: rules files, MCP servers, packages",
+    "Engineering lead: repository owner, history rewrite"
+   ],
+   "status": "assumed",
+   "kind": "context",
+   "used_by": [
+    "documentation only (not read by a rule yet)"
+   ],
+   "owner": "SOC lead",
+   "why": "Who is called for what. Runbooks name roles, not people.",
+   "source": "Assumed roles; replace with real on-call rota and names.",
+   "confirmed_by": null,
+   "confirmed_on": null,
+   "review_days": 90,
+   "review_by": "2027-01-23"
+  },
+  "SOC_AI_ENDPOINTS": {
+   "value": [
+    "llm-gw.nb.internal"
+   ],
+   "status": "assumed",
+   "owner": "AppSec / AI governance",
+   "why": "The only endpoints the optional SOC AI assistant may call. Anything else is refused before any data is sent.",
+   "source": "Assumed: the bank's internal LLM gateway. The assistant is off by default.",
+   "confirmed_by": null,
+   "confirmed_on": null,
+   "kind": "policy",
+   "used_by": [
+    "AI assistant"
+   ],
+   "review_days": 90,
+   "review_by": "2027-01-23"
+  }
+ }
+}

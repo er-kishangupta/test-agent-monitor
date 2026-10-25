@@ -1,0 +1,84 @@
+{
+ "_readme": "Platform settings: retention, archive storage and integrity, single sign-on and the AI assistant. This file is the baseline and changes by pull request. Retention and archive settings can also be edited in the dashboard under maker-checker (approved changes are laid over this file; see README). Everything that protects the monitor itself (encryption and signing switches, keys, TLS, sign-in mode, the AI endpoint) is deploy-time only: environment variables or a pull request. Secrets are never stored here: keys come from environment variables. status: assumed = a placeholder until the owner confirms it.",
+ "retention": {
+  "status": "assumed",
+  "owner": "Compliance with the CISO",
+  "source": "Placeholder. PCI DSS asks for 12 months of audit-log history with the most recent 3 months immediately available. CBUAE, NESA/IAS and any internal policy may require longer: Compliance sets the real numbers.",
+  "regulatory_minimum_days": 365,
+  "immediate_access_days": 90,
+  "hot_days": 30,
+  "warm_days": 90,
+  "total_days": 1825,
+  "legal_hold": false,
+  "data_residency_regions": [
+   "me-central-1"
+  ],
+  "archive": {
+   "backend": "local",
+   "encrypt": true,
+   "sign": true,
+   "local_path": "archive",
+   "s3": {
+    "endpoint_url": "",
+    "bucket": "nb-soc-archive",
+    "region": "me-central-1",
+    "prefix": "siem/",
+    "object_lock_mode": "COMPLIANCE",
+    "object_lock_days": 1825,
+    "sse": "aws:kms",
+    "kms_key_id": ""
+   }
+  }
+ },
+ "sso": {
+  "status": "assumed",
+  "owner": "Identity and access management",
+  "source": "Design option. Authentication is done by an identity-aware proxy in front of the monitor (Microsoft Entra ID with oauth2-proxy or Application Proxy, or AWS IAM Identity Center behind an ALB). The monitor trusts the identity headers only from the listed proxy addresses and maps directory groups to roles.",
+  "mode_env": "AUTH_MODE",
+  "modes": [
+   "none",
+   "basic",
+   "proxy"
+  ],
+  "user_header": "X-Forwarded-Preferred-Username",
+  "email_header": "X-Forwarded-Email",
+  "groups_header": "X-Forwarded-Groups",
+  "trusted_proxy_cidrs_env": "TRUSTED_PROXY_CIDRS",
+  "group_to_role": {
+   "NB-SOC-Analysts": "analyst",
+   "NB-SOC-Senior": "senior",
+   "NB-SOC-Leads": "lead"
+  },
+  "no_matching_group": "deny"
+ },
+ "ai_assistant": {
+  "status": "assumed",
+  "owner": "AppSec / AI governance",
+  "source": "Optional, off by default. Calls only the endpoint listed in the register entry SOC_AI_ENDPOINTS, over https, and returns advice only. What may leave the monitor is set by data_policy (default tokenize: credentials and customer identifiers removed, names and addresses replaced by tokens).",
+  "mode_env": "AI_MODE",
+  "modes": [
+   "off",
+   "advise",
+   "propose"
+  ],
+  "provider_env": "AI_PROVIDER",
+  "providers": [
+   "mock",
+   "openai_compatible"
+  ],
+  "endpoint_env": "AI_ENDPOINT",
+  "model_env": "AI_MODEL",
+  "api_key_env": "AI_API_KEY",
+  "timeout_seconds": 20,
+  "max_input_chars": 12000,
+  "data_policy": "tokenize",
+  "data_policy_env": "AI_DATA_POLICY",
+  "data_policies": [
+   "minimal",
+   "tokenize",
+   "redact",
+   "local_full"
+  ],
+  "data_policy_note": "minimal = structure only; tokenize = default; redact = names sent, secrets and customer identifiers masked; local_full = names and customer identifiers sent, bank-hosted model only, credentials always masked. Deploy-time setting: environment variable or pull request, never the dashboard."
+ }
+}

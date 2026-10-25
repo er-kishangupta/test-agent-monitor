@@ -1,0 +1,46 @@
+type,value,kind,tag,source,confidence,owner,criticality,expires,note,zone,environment,address,os,service,data_class,department
+ip,203.0.113.7,threat,Reverse-shell C2,Sample threat feed (synthetic),high,,high,2027-06-30,Synthetic TEST-NET address used by the sample reverse-shell scenario.,,,,,,,
+ip,203.0.113.50,threat,Staging / payload host,Sample threat feed (synthetic),medium,,high,2027-06-30,Synthetic TEST-NET address.,,,,,,,
+ip,203.0.113.99,threat,Crypto-miner pool,Sample threat feed (synthetic),medium,,medium,2027-03-31,Synthetic address. Seen after compromised build agents.,,,,,,,
+ip,192.0.2.44,threat,Phishing kit host,Sample threat feed (synthetic),low,,medium,2027-03-31,Low confidence: single report.,,,,,,,
+ip,2001:db8::bad,threat,IPv6 callback address,Sample threat feed (synthetic),medium,,medium,2027-06-30,Documentation IPv6 range used as a stand-in.,,,,,,,
+cidr,192.0.2.128/26,threat,Bulletproof hosting range,Sample threat feed (synthetic),medium,,medium,2027-06-30,Any address inside the range matches.,,,,,,,
+domain,exfil-c2.example.net,threat,DNS-tunnel C2 domain,Sample threat feed (synthetic),high,,high,2027-06-30,Matches sub-domains such as <id>.d.exfil-c2.example.net.,,,,,,,
+domain,paste-drop.example.net,threat,Data staging / paste site,Sample threat feed (synthetic),medium,,medium,2027-06-30,Used to stage stolen secrets.,,,,,,,
+domain,pkg-mirror-evil.example.org,threat,Typosquat package registry,Sample threat feed (synthetic),high,,high,2027-06-30,Look-alike of an internal registry name.,,,,,,,
+domain,rogue-mcp.example.com,threat,Rogue MCP server,Sample threat feed (synthetic),medium,,high,2027-06-30,Tool server that returned injected instructions.,,,,,,,
+domain,cdn-nb-fix.example.net,threat,Payload delivery domain,Sample threat feed (synthetic),medium,,medium,2026-09-30,Expired row: shown but no longer matched (demonstrates expiry).,,,,,,,
+cidr,198.51.100.0/24,benign,Corporate NAT / VPN egress (assumed),Network security (assumed),high,Network security,,2027-01-23,Placeholder documentation range. Confirm with the network team.,,corp,,,,,
+cidr,198.51.100.16/29,network,Developer VPN pool,IPAM (assumed),high,Network security,medium,,Addresses given to engineers on the corporate VPN.,VPN,corp,,,,,
+cidr,198.51.100.24/29,network,Office NAT,IPAM (assumed),high,Network security,medium,,Outbound NAT for office networks.,Office,corp,,,,,
+cidr,198.51.100.56/29,network,CI runner egress,IPAM (assumed),high,Platform engineering,high,,Outbound addresses of the build runners.,Build,prod,,,,,
+cidr,10.10.0.0/16,network,Corporate LAN,IPAM (assumed),high,Network security,medium,,Employee devices.,Corporate,corp,,,,,
+cidr,10.20.0.0/16,network,Production VPC (UAE region),IPAM (assumed),high,Cloud platform,critical,,Customer-facing services and data stores.,Production,prod,,,,,
+cidr,10.30.0.0/16,network,Development and test VPC,IPAM (assumed),high,Cloud platform,medium,,No customer data allowed.,Development,dev,,,,,
+cidr,10.40.0.0/24,network,Third-party developer VDI pool,IPAM (assumed),high,Vendor management,high,,Third-party developers work only from here.,VDI,vdi,,,,,
+cidr,172.16.50.0/24,network,Security tooling and management,IPAM (assumed),high,Security operations,critical,,"SIEM collectors, jump hosts, EDR console.",Management,prod,,,,,
+cidr,192.168.200.0/24,network,Guest Wi-Fi,IPAM (assumed),high,Network security,low,,No route to bank services.,Guest,corp,,,,,
+host,ci-runner-01,asset,CI runner (builds and deploys),CMDB (assumed),high,Platform engineering,critical,,Holds deploy credentials. Isolation needs Platform engineering.,Build,prod,198.51.100.60,Ubuntu 22.04,CI/CD pipeline,deploy secrets,Platform engineering
+host,dev-laptop-01,asset,Engineer laptop (managed),CMDB (assumed),high,Engineering,medium,,EDR installed.,Corporate,corp,10.10.4.11,macOS 15,Software development,source code,Engineering
+host,dev-laptop-02,asset,Engineer laptop (managed),CMDB (assumed),high,Engineering,medium,,EDR installed.,Corporate,corp,10.10.4.12,macOS 15,Software development,source code,Engineering
+host,dev-laptop-03,asset,Engineer laptop (managed),CMDB (assumed),high,Engineering,medium,,EDR installed.,Corporate,corp,10.10.4.13,Windows 11,Software development,source code,Engineering
+host,dev-laptop-04,asset,Engineer laptop (managed),CMDB (assumed),high,Engineering,medium,,EDR installed.,Corporate,corp,10.10.4.14,Windows 11,Software development,source code,Engineering
+host,dev-laptop-05,asset,Engineer laptop (managed),CMDB (assumed),high,Engineering,medium,,EDR installed.,Corporate,corp,10.10.4.15,Ubuntu 24.04,Software development,source code,Engineering
+host,dev-laptop-06,asset,Engineer laptop (managed),CMDB (assumed),high,Engineering,medium,,EDR installed.,Corporate,corp,10.10.4.16,Ubuntu 24.04,Software development,source code,Engineering
+host,dev-laptop-07,asset,Third-party developer laptop,CMDB (assumed),high,Vendor management,high,,Unmanaged endpoint. Control is at the gateways.,VDI,vdi,10.40.0.27,Windows 11 (unmanaged),Software development,source code,Third party
+host,llm-gw.nb.internal,asset,LLM gateway,CMDB (assumed),high,AppSec / AI governance,high,,All agent model traffic goes through here.,Production,prod,10.20.8.10,Linux,AI platform,prompts and responses,AI platform
+host,mcp-gw.nb.internal,asset,MCP gateway,CMDB (assumed),high,AppSec / AI governance,high,,All agent tool calls go through here.,Production,prod,10.20.8.11,Linux,AI platform,tool results,AI platform
+host,registry-proxy.nb.internal,asset,Package registry proxy,CMDB (assumed),high,Platform engineering,high,,Blocks look-alike and unapproved packages.,Build,prod,10.20.6.5,Linux,CI/CD pipeline,packages,Platform engineering
+host,egress-proxy.nb.internal,asset,Egress proxy and DNS,CMDB (assumed),high,Network security,high,,Only route to the internet for servers and runners.,Production,prod,10.20.2.3,Linux,Network services,traffic metadata,Network security
+host,siem-collector-01,asset,Log collector,CMDB (assumed),high,Security operations,critical,,Silence here hides everything behind it.,Management,prod,172.16.50.20,Linux,Security monitoring,security logs,Security operations
+host,core-banking-api-01,asset,Core banking API,CMDB (assumed),high,Core banking,critical,,Customer-facing. Any anomaly is high priority.,Production,prod,10.20.1.10,Linux,Core banking,customer PII,Core banking
+host,customer-db-01,asset,Customer database,CMDB (assumed),high,Data platform,critical,,Holds customer records.,Production,prod,10.20.1.40,Linux,Core banking,customer PII,Data platform
+user,ext.dev1,identity,Third-party developer,HR / vendor export (assumed),high,Vendor management,high,,Contractor account. VDI only.,,,,,,,Third party
+user,platform.admin,identity,Privileged administrator,IAM (assumed),high,Cloud security,critical,,Can change IAM and logging. Any anomaly is high priority.,,,,,,,Platform engineering
+user,svc-ci,identity,Service identity (CI),IAM (assumed),high,Platform engineering,high,,Expected to read secrets at deploy time only.,,,,,,,Platform engineering
+user,yusuf.a,identity,Engineer,HR / IAM export (assumed),high,Engineering,medium,,,,,,,,,Engineering
+user,noor.s,identity,Engineer,HR / IAM export (assumed),high,Engineering,medium,,,,,,,,,Engineering
+user,lina.m,identity,Engineer,HR / IAM export (assumed),high,Engineering,medium,,,,,,,,,Engineering
+user,ravi.p,identity,Engineer,HR / IAM export (assumed),high,Engineering,medium,,,,,,,,,Engineering
+user,omar.h,identity,Senior engineer,HR / IAM export (assumed),high,Engineering,medium,,,,,,,,,Engineering
+user,sara.k,identity,Engineer (new joiner),HR / IAM export (assumed),high,Engineering,medium,,Joined this quarter: baselines still forming.,,,,,,,Engineering

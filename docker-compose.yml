@@ -1,0 +1,33 @@
+name: coding-agent-monitor
+services:
+  monitor:
+    build: .
+    ports:
+      - "127.0.0.1:8000:8000"     # localhost only: the monitor stores sensitive evidence, so it is not exposed to the LAN by default
+    environment:
+      WEBHOOK_URL: "mock"          # "mock" writes payloads to /srv/out/webhook_received.ndjson; set an external https URL for real POSTs
+      SILENCE_GAP_SECONDS: "900"
+      ARCHIVE_KEYS: "ephemeral"    # DEMO: throw-away archive keys kept in memory (archive cannot be decrypted after a restart). Production: ARCHIVE_ENC_KEY / ARCHIVE_HMAC_KEY from a secret manager.
+      # PLATFORM_STATE_DIR: "/srv/state"   # keep approved retention-setting changes across restarts (mount a volume there); otherwise they are memory-only in the demo
+      # --- Optional features, all OFF in the demo (see README: "Platform options") ---
+      # AI_MODE: "advise"            # off | advise | propose. Provider "mock" is built in and free. A real model needs approval (cost per call).
+      # AI_DATA_POLICY: "tokenize"   # what may leave for the AI: minimal | tokenize (default) | redact | local_full (bank-hosted model only). See README "What may be sent to an AI"
+      # CASE_TEXT_GUARD: "block"   # block (default) | off: refuse card/sensitive data typed into case notes and proposal forms. The privacy banner always shows.
+      # AI_PROVIDER: "mock"          # mock | openai_compatible (AI_ENDPOINT must be https and in the register entry SOC_AI_ENDPOINTS)
+      # AUTH_MODE: "proxy"           # none | basic | proxy (SSO behind an identity-aware proxy; also set TRUSTED_PROXY_CIDRS)
+      # TRUSTED_PROXY_CIDRS: "172.18.0.0/16"
+      # --- TLS (HTTPS). Create a demo certificate first:  python scripts/make_dev_cert.py   then uncomment these and the volume below ---
+      # TLS_CERT_FILE: "/srv/certs/dev.crt"
+      # TLS_KEY_FILE: "/srv/certs/dev.key"
+      # REQUIRE_TLS: "1"              # refuse plain-HTTP requests
+      # Optional access control (HTTP Basic). Uncomment to require a login for every route:
+      # DASHBOARD_USER: "analyst"
+      # DASHBOARD_PASSWORD: "change-me-long-random-value"
+    # volumes:
+    #   - ./certs:/srv/certs:ro       # certificate and key for TLS (never commit them: certs/ is git-ignored)
+    tmpfs:
+      - /srv/out:uid=10001,gid=10001,mode=0755   # response artefacts live in memory inside the container: always writable, no host-permission issues
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL

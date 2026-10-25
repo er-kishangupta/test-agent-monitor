@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coding-Agent Threat Monitor</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<header>
+  <h1><span id="pulse" class="pulse"></span>Coding-Agent Threat Monitor<small>New Bank (Dummy) · prototype</small></h1>
+  <nav id="tabs">
+    <button data-a="tab" data-tab="overview" class="on">Overview</button>
+    <button data-a="tab" data-tab="alerts">Alerts &amp; cases</button>
+    <button data-a="tab" data-tab="sources">Log sources</button>
+    <button data-a="tab" data-tab="logic">Detection logic</button>
+    <button data-a="tab" data-tab="pipeline">Pipeline &amp; policies</button>
+    <button data-a="tab" data-tab="runbooks">Runbooks</button>
+    <button data-a="tab" data-tab="gov">Governance &amp; audit</button>
+    <button data-a="tab" data-tab="intel">Intel list</button>
+    <button data-a="tab" data-tab="platform">Platform &amp; compliance</button>
+  </nav>
+  <div class="spacer"></div>
+  <div class="acting">
+    <span class="meta">Acting as</span>
+    <span id="whoami" class="meta"></span>
+    <input id="actor" type="text" maxlength="40" placeholder="your name" aria-label="Your name" class="who">
+    <select id="role" aria-label="Your role"><option value="analyst">analyst</option><option value="senior">senior</option><option value="lead">lead</option></select>
+  </div>
+  <span id="progress" class="meta"></span>
+  <button class="primary" data-a="replay">▶ Replay live</button>
+  <button data-a="post" data-url="/api/load-sample">Load sample</button>
+  <button data-a="post" data-url="/api/reset">Reset</button>
+</header>
+
+<main>
+  <!-- OVERVIEW -->
+  <section id="tab-overview" class="tab on">
+    <div id="posture" class="posture"></div>
+    <div class="kpis" id="kpis"></div>
+    <div class="grid2">
+      <div>
+        <div class="card"><h2>Needs attention now</h2><div id="attention"></div></div>
+      </div>
+      <div>
+        <div class="card"><h2>Alerts by category</h2><div id="cats"></div></div>
+        <div class="card"><h2>Telemetry health</h2><div id="telem"></div></div>
+        <div class="card"><h2>Containment actions taken (simulated)</h2><div id="contain"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ALERTS -->
+  <section id="tab-alerts" class="tab">
+    <div class="split">
+      <div>
+        <div class="filters">
+          <span class="meta">Queue</span><span id="sevchips"></span>
+          <select id="stsel" aria-label="Status"></select>
+          <select id="catsel" aria-label="Category"></select>
+          <input id="q" type="search" placeholder="Search user, host, session, evidence…" aria-label="Search alerts">
+          <label class="meta"><input id="group" type="checkbox"> case queue (uncheck for raw alerts)</label>
+          <label class="meta"><input id="signals" type="checkbox"> show low signals</label>
+        </div>
+        <div id="feed"></div>
+      </div>
+      <aside id="detail" class="detail"><div class="empty">Select an alert to see context, recommended actions and the case workflow.</div></aside>
+    </div>
+  </section>
+
+  <!-- SOURCES -->
+  <section id="tab-sources" class="tab">
+    <div class="card"><h2>Endpoints &amp; runners (heartbeat-monitored)</h2><div id="srcsum" class="chips"></div><div id="hosts"></div>
+      <p class="meta" id="srcnote"></p></div>
+    <div class="card"><h2>Telemetry feeds by control point</h2><div id="feeds"></div>
+      <p class="meta">Feeds are event-driven, so a quiet feed is shown as <em>idle</em>, not failed. In production each feed also emits a synthetic heartbeat so silence becomes a hard signal.</p></div>
+  </section>
+
+  <!-- DETECTION LOGIC -->
+  <section id="tab-logic" class="tab">
+    <div class="card"><h2>How detection works here</h2><div id="logic-intro"></div></div>
+    <div class="grid2">
+      <div class="card"><h2>Rules: open one to see its exact logic and live parameters</h2><div id="logic-rules"></div></div>
+      <div>
+        <div class="card"><h2>Rule tester (dry run, nothing is stored)</h2>
+          <p class="meta">Paste one or more events (NDJSON, one per line). The rules run in a throw-away engine and show what fires and why.</p>
+          <textarea id="tester-in" rows="9" spellcheck="false" aria-label="Events to test"></textarea>
+          <div class="r"><button class="primary" data-a="runtest">Run rules</button><button data-a="loadtest">Reset example</button></div>
+          <div id="tester-out"></div></div>
+        <div class="card"><h2>Detection quality: labelled validation corpus (real attack variants vs routine developer work)</h2><div id="valid"><div class="meta">Loading…</div></div></div>
+        <div class="card"><h2>Agentic-SIEM capabilities: built vs roadmap</h2><div id="caps"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PIPELINE -->
+  <section id="tab-pipeline" class="tab">
+    <div class="card"><h2>How events flow through the monitor (live counters)</h2><div id="stages" class="stages"></div></div>
+    <div class="card"><h2>Detection coverage: MITRE ATT&amp;CK and ATLAS techniques the rules map to</h2><div id="cov"><div class="meta">Loading…</div></div></div>
+    <div class="grid2">
+      <div class="card"><h2>Detection rules</h2><div id="rules"></div></div>
+      <div>
+        <div class="card"><h2>Known-environment register (what the rules treat as normal here)</h2><div id="envreg"></div></div>
+        <div class="card"><h2>Policies the rules enforce (read-only)</h2><div id="policies"></div></div>
+        <div class="card"><h2>Automated response log</h2><div class="tabs2" id="logtabs"></div><div id="log"></div></div>
+      </div>
+    </div>
+  </section>
+  <!-- RUNBOOKS -->
+  <section id="tab-runbooks" class="tab">
+    <div class="rbwrap">
+      <div class="card"><h2>Runbooks</h2><p class="meta">One per configured policy. Each opens from the case it applies to.</p><div id="rb-index"></div></div>
+      <div class="card"><div id="rb-doc"><div class="empty">Choose a runbook.</div></div></div>
+    </div>
+  </section>
+  <!-- GOVERNANCE -->
+  <section id="tab-gov" class="tab">
+    <div class="grid2">
+      <div>
+        <div class="card"><h2>Known-environment register: the facts the policies read</h2>
+          <p class="meta">Part of the SIEM's policy layer. A change is proposed by one person and takes effect only when a <b>different, more senior</b> person approves (maker-checker). Both steps are in the audit log.</p>
+          <div id="gov-entries"></div></div>
+        <div class="card"><h2>Propose a change (maker)</h2><div id="gov-form"></div></div>
+      </div>
+      <div>
+        <div class="card"><h2>Proposals awaiting a checker, and history</h2><div id="gov-props"></div></div>
+        <div class="card"><h2>Audit log: every action by people and by the system</h2>
+          <div class="filters"><input id="aud-q" type="search" placeholder="Filter by actor, action, case…" aria-label="Filter audit log">
+            <button data-a="verifyaudit">Verify chain</button><span id="aud-verify" class="meta"></span></div>
+          <div id="aud"></div></div>
+      </div>
+    </div>
+  </section>
+  <!-- INTEL LIST -->
+  <section id="tab-intel" class="tab">
+    <div class="grid2">
+      <div class="card"><h2>Upload the intel and enrichment list</h2>
+        <p class="meta">One list for everything that gives an analyst context: internet IPs, ranges and domains (threat intel), your network zones, your hosts and systems (CMDB), and your users and service accounts (IAM / HR). It is shown on every case and can be searched back over stored data. <b>Enrichment only:</b> a match never fires, suppresses or re-prioritises an alert. Every upload is audited. Rows can expire.</p>
+        <div id="intel-form"></div></div>
+      <div class="card"><h2>Retro-hunt result</h2><div id="intel-hunt"><div class="meta">Press <i>Retro-hunt</i> to search stored alerts and session timelines for every active row.</div></div></div>
+    </div>
+    <div class="card"><h2>What is in the list</h2><div id="intel-rows"></div></div>
+    <div class="card"><h2>Where this data comes from in production</h2><div id="intel-feeds"></div></div>
+  </section>
+  <!-- PLATFORM -->
+  <section id="tab-platform" class="tab">
+    <div class="card"><h2>Posture checks (computed from live settings)</h2><div id="plat-sum"></div><div id="plat-checks"></div></div>
+    <div class="grid2">
+      <div>
+        <div class="card"><h2>Retention and archive</h2><div id="plat-ret"></div></div>
+        <div class="card"><h2>Edit retention and archive settings</h2>
+          <p class="meta">These are the numbers and choices a Compliance owner sets. Saving needs a second, more senior person (maker-checker), is checked against the compliance checks, and is written to the audit log. In production they come from the bank's policy, not from the prototype's placeholders.</p>
+          <div id="ret-form"></div><div id="ret-locked"></div>
+          <h4>Proposals</h4><div id="ret-props"></div>
+          <details class="mt"><summary>Effective settings (copy into config/platform.json for production)</summary><pre id="ret-eff" class="mono"></pre></details></div>
+        <div class="card"><h2>Sign-in (SSO) and transport security</h2><div id="plat-auth"></div></div>
+        <div class="card"><h2>AI assistant (optional, off by default)</h2><div id="plat-ai"></div></div>
+      </div>
+      <div class="card"><h2>What was considered: built, option, left to production, by design</h2><div id="plat-cons"></div></div>
+    </div>
+  </section>
+</main>
+<footer>Synthetic telemetry. Containment actions are simulated and written to <code>out/</code>. Evidence is redacted before it is stored or shown.</footer>
+<script src="/static/app.js"></script>
+</body>
+</html>
