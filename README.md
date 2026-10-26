@@ -33,13 +33,13 @@ No Docker? `pip install -r requirements.txt && uvicorn app.main:app --port 8000`
 
 Response artefacts (`alerts.ndjson` structured alert output, `quarantine.log`, `webhook_received.ndjson`, `flagged_files.txt`, `package_blocklist.txt`)
 are written inside the container to `/srv/out` (an in-memory tmpfs, so there are no host-permission problems). View or copy them while it runs:
-`docker compose exec monitor cat /srv/out/quarantine.log` or `docker compose cp monitor:/srv/out ./out-copy`. Running the CLI locally writes to `./out/`.
+`docker compose exec monitor cat /srv/out/quarantine.log` or `docker compose cp monitor:/srv/out ./out-copy`. Running the CLI locally writes to a temporary folder (printed path); add `--out-dir ./out` to keep the files.
 
 ## 3-minute demo path
 
 1. **Overview** – posture banner ("Incident response required"), KPIs, *Needs attention now* (cases ranked by severity with the SLA target), telemetry health, containment actions.
 2. **Alerts & cases** – open *Provenance: the command was supplied by untrusted content* (C-003): the **case briefing**, **Why did this happen?** (provenance link, five tested hypotheses), automation done, **human decisions** (Approve / Decline), the **swim-lane timeline**, **entity graph** and **IOC table**. Then open *Agentic kill chain*: why it fired, what it means, triage questions, containment steps, MITRE links, the **session timeline** (⚑ marks the evidence) and the **case workflow** (status, owner, notes, history). The Alerts tab opens as a **P1–P4 case queue** (priority is explained per case); untick *case queue* for raw alerts and tick *show low signals* to see what is stored but never paged.
-3. **Log sources** – 7 of 8 endpoints reporting; `dev-laptop-07` (a third-party developer host) is *silent – tamper suspected*; past gaps show the 22-minute platform outage that was *not* treated as tampering.
+3. **Log sources** – 7 of 8 endpoints reporting; `dev-laptop-07` (a third-party developer's desktop; under the VDI-only access model read it as their VDI session host, the name comes from the synthetic data) is *silent – tamper suspected*; past gaps show the 22-minute platform outage that was *not* treated as tampering.
 4. **Detection logic** – every rule's exact logic, engine type and live parameters; the **rule tester** runs pasted events through the rules without storing anything; built-vs-roadmap capability list.
 5. **Pipeline & policies** – live counters for each stage (collect → parse → normalise → detect → correlate → case → respond), every rule with its logic, the policy lists the rules enforce, and the automated-response log.
 6. Click **▶ Replay live** to watch the same detections fire in event order.
@@ -112,22 +112,22 @@ Every configured policy has a runbook (`runbooks/RB-*.md`): *when it fires, the 
  git hooks    ──┤   NDJSON   ┌────────┐│                                                │   alert (JSON)  ┌───────────┐
  LLM gateway  ──┼──────────▶ │ ingest │┤  engine.py: session state, host clocks         ├───────────────▶ │ response  │──▶ quarantine.log
  MCP gateway  ──┤  /api/ingest└────────┘│   • D8 telemetry silence (event + wall clock) │  MITRE-mapped,  │ (SOAR sim)│──▶ webhook
- egress proxy ──┤                       │   • C1 kill-chain correlation per session     │  redacted       └───────────┘──▶ freeze session
+ egress proxy ──┤                       │   • C1–C3 correlations per session            │  redacted       └───────────┘──▶ freeze session
  log shipper  ──┘                       └────────────────────────────────────────────────┘  evidence            │         ──▶ flag files / block pkg
  (heartbeats)                                                                                                    ▼
                                                                                               FastAPI  →  dashboard (static/index.html) + CLI
 ```
 
-Everything is in-process and deterministic: **no LLM is used for detection** (a deliberate choice – the detector must not be steerable by
+The diagram shows the main feeds; all 14 are listed under *What has been built*. Everything is in-process and deterministic: **no LLM is used for detection** (a deliberate choice – the detector must not be steerable by
 the same prompt-injection it is looking for). Pure Python, no database; alerts persist to `out/alerts.ndjson`.
 
 ## How it works (plain language)
 
-1. **Collect** – every control point that sees agent activity (IDE telemetry, shell audit, git hooks, LLM gateway, MCP gateway, egress proxy, package audit, log-shipper heartbeats) sends one JSON event per line (NDJSON).
+1. **Collect** – every control point that sees agent activity (14 feeds: IDE telemetry, agent transcript, shell audit, EDR, git hooks, LLM gateway, MCP gateway, egress proxy, DNS, package audit, GitHub audit log, cloud audit log, identity provider, log-shipper heartbeats) sends one JSON event per line (NDJSON).
 2. **Parse & validate** – each line must be JSON with `ts`, `event_type`, `session_id`. Bad lines are rejected and counted, oversized fields are truncated, and a crashing rule can never stop the pipeline.
 3. **Normalise** – defaults are filled, the event is routed by type, and the engine keeps state per session (timeline) and per host (heartbeat baseline).
-4. **Detect** – the rules in `detectors.py` run on each event against the policy lists in `config.py` (approved LLM endpoints, egress allowlist, internal package names, protected branches, agent config files).
-5. **Correlate** – `engine.py` looks across events: injection → privileged action → egress in one session (C1), and log sources that stop talking (D8).
+4. **Detect** – the rules in `detectors.py` run on each event against the policy lists in the known-environment register (`config/environment.json`, loaded by `app/config.py`: approved LLM endpoints, egress allowlist, internal package names, protected branches, agent config files).
+5. **Correlate** – `engine.py` looks across events: injection → privileged action → egress in one session (C1), a command traced back to untrusted content (C2), collection then exfiltration (C3), and log sources that stop talking (D8).
 6. **Alert → case** – each detection becomes a structured, MITRE-mapped alert with redacted evidence. Alerts are grouped per session into a **case** with status (new → triaged → investigating → contained → closed true/false positive), owner, notes and history.
 7. **Respond** – by severity: webhook, quarantine log, freeze the agent session or isolate the host, flag files, block a package (all simulated, written to `out/`).
 
@@ -141,9 +141,9 @@ One JSON object per line:
  "event_type":"shell_command","data":{"command":"curl -s https://… | bash","approved_by":"auto"}}
 ```
 
-`event_type` ∈ `prompt`, `file_read`, `file_edit`, `shell_command`, `git_op`, `api_call` (LLM gateway), `network_egress`, `mcp_tool_call`,
-`tool_result` (content returned to the agent, carries `origin_trust`), `package_install`, `heartbeat` (log-shipper liveness).
-Sources mirror real control points: IDE/extension telemetry, shell audit (auditd/EDR), git hooks / server-side hooks, an LLM gateway, an MCP gateway, an egress proxy and the log shipper.
+`event_type` (17) ∈ `prompt`, `agent_message` (agent transcript), `file_read`, `file_edit`, `shell_command`, `process_start` (EDR), `git_op`, `api_call` (LLM gateway), `network_egress`, `dns_query`, `mcp_tool_call`,
+`tool_result` (content returned to the agent, carries `origin_trust`), `package_install`, `audit_event` (GitHub audit log), `cloud_api` (CloudTrail shape), `auth_event` (identity provider), `heartbeat` (log-shipper liveness).
+Sources mirror real control points: IDE/extension telemetry, shell audit (auditd/EDR), git hooks / server-side hooks, an LLM gateway, an MCP gateway, an egress proxy and DNS resolver, the package registry, GitHub, the cloud account, the identity provider and the log shipper. The control-plane events (EDR, DNS, GitHub, cloud, identity) carry no agent session id and are joined to the session by user or host.
 
 ## Detection logic
 
@@ -162,11 +162,12 @@ the privileged action that follows is what makes it actionable (D1 → C1).
 | **D8** | **Telemetry silence / log tampering** | Per-host heartbeat baseline (≥3 beats, 5-min cadence). A host with no events for 15 min while peers report ⇒ alert; **silence within 15 min of a log-evasion command** (`systemctl stop log-shipper`, `unset HTTPS_PROXY`…) ⇒ **critical (assume deliberate blinding)**; **all hosts silent at once** ⇒ medium *platform outage* (still flagged: attackers can hide in the gap). Runs on event time for replay and on the wall clock (`/api/ingest?live=true`) when the stream stops entirely. | T1685 | medium–critical |
 | **D9** | Source-control safeguards weakened | GitHub audit log: branch protection removed, secret scanning / push protection disabled, repo made public or transferred, read-write deploy key, OAuth app with broad scopes, external collaborator. Raised when the change is made with an API token during an agent session. | T1685, AML.T0053 | high–critical |
 | **D10** | Credential misuse (cloud + identity) | A key the monitor saw leaked (D2) is later used (critical outside the corporate range); cloud audit logging stopped; IAM/key creation from a developer credential; secret-read burst; developer credential used from an unknown address; agent token accepted after the session was suspended; token used away from its host. | T1078.004, T1685.002, T1098.001, T1528 | medium–critical |
-| **C3** | Collection then exfiltration | Credentials or sensitive data gathered in a session, then an outbound channel outside policy (unapproved host, personal fork, DNS tunnel). | T1552.001, T1567, AML.T0086 | medium–critical |
 | **C1** | **Kill-chain correlation** | Per session: an indirect-injection alert followed (≤ 30 min) by a D2/D3/D4/D5/D6/D7 alert **or** egress to a non-allowlisted host ⇒ one *critical* alert listing the stages. | AML.T0051.001 → AML.T0053 → AML.T0086, T1567 | critical |
+| **C2** | **Content-to-command provenance** | Keeps the text of every untrusted item the session ingested (tool results, external file reads). When a high/critical D2/D4/D5/D7 action alerts, looks for its command, package, host or IP inside that earlier content: exact command found ⇒ *verbatim* link (critical); only an indicator (IP, domain) ⇒ *indicator* link (high). Catches injections that use no override wording (scenario S5). Skipped when C1 already fired for the session. | AML.T0051.001, AML.T0053, T1059 | high–critical |
+| **C3** | Collection then exfiltration | Credentials or sensitive data gathered in a session, then an outbound channel outside policy (unapproved host, personal fork, DNS tunnel). | T1552.001, T1567, AML.T0086 | medium–critical |
 
-Policy lists (approved LLM hosts, egress allowlist, internal package names, protected branches…) live in `app/config.py`; ATLAS/ATT&CK IDs in `app/mitre.py`
-(ATLAS IDs checked against the official ATLAS dataset v5.6.0 – re-verify at atlas.mitre.org, the framework changes often).
+Policy lists (approved LLM hosts, egress allowlist, internal package names, protected branches…) live in the register `config/environment.json` (loaded by `app/config.py`); ATLAS/ATT&CK IDs in `app/mitre.py`
+(ATT&CK IDs checked against ATT&CK v20, May 2026: v19 replaced T1562.001/.006 with T1685 and T1562.008 with T1685.002; ATLAS IDs checked against dataset v5.6.0. Re-verify at attack.mitre.org and atlas.mitre.org, both change often). The table shows each rule's headline techniques; individual alerts can carry more (for example `sudo` run by an agent also carries T1548.003).
 
 ## Alert output
 
@@ -198,11 +199,11 @@ Containment actions are **simulated** (written to `out/`); each function is the 
 | What | Where |
 |---|---|
 | Rule code (patterns, thresholds, sequence logic) | `app/detectors.py` (D1-D7, D9, D10) and `app/engine.py` (D8 baseline + timer, C1 kill chain, C2 provenance) |
-| Policy values the rules enforce: approved LLM endpoints, egress allow-list, protected branches, internal package names, agent-config files, time windows | `app/config.py` |
+| Policy values the rules enforce: approved LLM endpoints, egress allow-list, protected branches, internal package names, agent-config files | `config/environment.json` (register, loaded by `app/config.py`); time windows in `app/config.py` |
 | The same logic written out for analysts, shown live in the **Detection logic** tab | `app/catalog.py` (`LOGIC`); a test fails if it drifts from the MITRE table or rule list |
 | Proof each rule works | labelled scenarios in `data/ground_truth.json` + `tests/test_detections.py` |
 
-**Engine types.** Pattern rules look at one event. Stateful correlation looks across a session or a user (C1 kill chain, C2 provenance, D5 user baseline). Baseline-and-timer (D8) learns each host's heartbeat and watches the clock. **No machine-learning or LLM model decides whether an alert fires**, so the detector cannot be steered by the content it inspects. An LLM is only a roadmap item for read-only triage drafts.
+**Engine types.** Pattern rules look at one event. Stateful correlation looks across a session or a user (C1 kill chain, C2 provenance, D5 user baseline). Baseline-and-timer (D8) learns each host's heartbeat and watches the clock. **No machine-learning or LLM model decides whether an alert fires**, so the detector cannot be steered by the content it inspects. An LLM exists only as an optional, off-by-default second opinion with no authority (see *The AI question* below).
 
 **Why did this happen? (`app/analysis.py`).** For the first flagged action the monitor looks for the command, host or package inside untrusted content the agent ingested earlier (*provenance link*, verbatim or indicator), checks who initiated it (agent auto-approved, human, or a remote party typing inside a reverse shell), compares it with the developer's prompt, and ranks five hypotheses (content-steered, poisoned config, compromised agent/extension, deliberate, benign mistake) with evidence for and against and what to check next. When nothing explains the action it says so and lists the evidence gap instead of guessing.
 
@@ -242,7 +243,7 @@ Not done (documented, not hidden): rate limiting, a web application firewall, en
 ## What a three-person SOC sees (review update)
 
 - **Signal vs case.** Low-severity findings (a vendor installer piped to a shell, a quoted injection phrase in a security article, a routine rules-file edit, `--no-verify`) are stored and searchable but never open a case, page anyone or trigger containment. They attach to a case if a stronger alert follows in the same session.
-- **P1–P4 priority** on every case (P1 = drop everything, P2 = same hour, P3 = same day, P4 = backlog) with the reasons listed: corroborated by independent sources, it actually executed, no human approved it, a stolen credential is in use, customer data involved, critical system. P1 is deliberately rare in real life; the sample is attack-dense, so 5 of its 13 cases are P1.
+- **P1–P4 priority** on every case (P1 = drop everything, P2 = same hour, P3 = same day, P4 = backlog) with the reasons listed: corroborated by independent sources, it actually executed, no human approved it, a stolen credential is in use, customer data involved, critical system. P1 is deliberately rare in real life; the sample is attack-dense, so 5 of its 13 cases are P1. Priority is risk × confidence: a P1 needs a score of at least 90 **and** high confidence (correlated, seen by two or more sources, it actually happened, or EDR-confirmed). A severe but unproven case is capped at P2 until corroborated.
 - **Analyst summary on every case**: verdict and confidence, what happened in order (no rule jargon), why it matters, the single next action with a deadline, the one question to ask the developer, and what the telemetry cannot tell. Written by templates over structured evidence; no model writes it, so injected content cannot steer it.
 - **New log sources** (event types): agent transcript (`agent_message`), EDR (`process_start`), DNS (`dns_query`), GitHub audit log (`audit_event`), cloud audit log (`cloud_api`, CloudTrail shape), identity provider (`auth_event`). They carry no agent session id; they are joined to the developer's session by user or host within 15 minutes, so a cloud call made with a leaked key lands in the same case as the commit that leaked it.
 - **New rules**: **D9** source-control safeguards weakened (branch protection, secret scanning, repo made public, deploy keys, broad OAuth scopes, external collaborators); **D10** credential misuse (a key the monitor saw leaked is used, cloud logging switched off, IAM changes, secret-read bursts, a token still accepted after we suspended the session, a token used away from its machine); **C3** collection followed by exfiltration.
@@ -260,7 +261,6 @@ Not done (documented, not hidden): rate limiting, a web application firewall, en
 
 **Everything is logged.** `app/audit.py` writes an append-only `out/audit.ndjson` in which every record carries the SHA-256 of the previous one (edit, delete or insert a line and *Verify chain* names the record). It records who (actor, role, client address), what, which object, the result (`ok`, `refused`, `denied`) and non-sensitive detail: case updates and decisions (note text is not copied), register proposals / approvals / refusals, ingest, load sample, reset, replay, rule tests, failed authentication (rate-limited), and what the system did on its own (cases opened, automatic response actions). `Reset` never clears it. Limits, stated plainly: in the prototype the actor and role are **self-asserted** in the UI (the optional shared password only keeps strangers out), so the maker-checker logic is enforced but identity is not; the file proves tampering only to someone holding a trusted copy of the head hash; reads of the dashboard are not logged. Production: SSO claims for identity and the same records shipped to the central SIEM's immutable store.
 
-Priority is risk × confidence: a P1 needs a score of at least 90 **and** high confidence (correlated, seen by two or more sources, it actually happened, or EDR-confirmed). A severe but unproven case is capped at P2 until corroborated.
 
 ## Platform options: what was considered, what is built, what is an option, what is left out
 
@@ -331,7 +331,7 @@ Every register entry now has a **review-by date**. Past it the entry stays in fo
 No policy ever sends a credential. Every case has **Preview what the AI would receive** (`GET /api/cases/{id}/ai-preview`): the exact input, what was removed or tokenized and the guard result; nothing is sent. Limits, stated plainly: free-text customer names inside evidence cannot be recognised by pattern (use `minimal`, or have the bank confirm the policy before a real model is connected); tokenized attacker IPs and domains cannot be reputation-checked by the model; "bank-hosted" is judged by name and must be confirmed with the network team; tested with the built-in mock and a stub endpoint only.
 
 The built-in **mock** provider (free) shows the plumbing and guardrails, not model quality: it restates the rules' result and reads no free text. The `openai_compatible` provider (a chat-completions endpoint such as the bank's internal gateway) is unit-tested against a stub and was **never run against a real model**; a real model costs per call and needs approval and a budget first.
-**Autonomous AI response is not built, by design:** an AI that triggers containment on its own would repeat the confused-deputy problem that this monitor exists to detect. The safe next step is the one built here: AI proposes, a named person approves. The counter-argument is real (humans are slow at 2 a.m.): the answer is pre-approved, reversible actions by the MDR, not model-initiated ones.
+**Autonomous AI response is not built, by design:** an AI that triggers containment on its own would repeat the inherited-privilege problem that this monitor exists to detect (a tool acting with authority it should not exercise on its own). The safe next step is the one built here: AI proposes, a named person approves. The counter-argument is real (humans are slow at 2 a.m.): the answer is pre-approved, reversible actions by the MDR, not model-initiated ones.
 
 ## Evaluation
 
@@ -363,7 +363,8 @@ Two layers, both enforced by `pytest`:
 - **Retention numbers are placeholders** (`assumed`, owner Compliance); the archive is tamper-evident, and tiering, restore and expiry are the production SIEM's job.
 - **The intel list is a manual upload**: no live feeds, no licence review of public feeds, and a match is enrichment only. ATT&CK coverage evidence is per rule, not per technique.
 - Detection content is portable: each rule can be re-expressed as Sigma, KQL or SPL for the bank's SIEM; this engine is the reference implementation.
-- The ATT&CK and ATLAS IDs added for D8–D10 and C3 were checked from memory and search only; re-verify at attack.mitre.org.
+- ATT&CK IDs were checked against ATT&CK v20 (May 2026) and ATLAS IDs against dataset v5.6.0; both frameworks change often, so re-verify at attack.mitre.org and atlas.mitre.org before external use.
+- The ATT&CK coverage view counts each rule's headline techniques. Some alerts carry extra techniques (T1548.003, T1070.003, T1098.004, T1136, T1048, T1105, T1572, T1204.002) that the view does not count as coverage. Privilege Escalation and Collection are therefore shown as gaps, each with a note naming the nearest alert-level mapping.
 
 ## Repo layout
 

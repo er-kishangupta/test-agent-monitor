@@ -16,7 +16,15 @@ OUT_OF_SCOPE = {
     "Reconnaissance": "Outside the bank's telemetry (external). Threat-intel / attack-surface tooling.",
     "Resource Development": "Attacker-side activity. Only the part we can see (hallucinated or look-alike packages, D3) is mapped under Initial Access.",
     "Lateral Movement": "Network / endpoint detection in the main SIEM and EDR. This monitor sees the agent session, not the network.",
-    "Discovery": "Only cloud discovery after a leaked key (T1580) is mapped. Host and network discovery belong to EDR.",
+    "Discovery": "Only cloud discovery after a leaked key is seen (D10 alerts carry T1580; alert level, not counted here). Host and network discovery belong to EDR.",
+}
+# Tactics with no headline technique that are still partly seen at alert level. Shown as the note on the gap, so a gap
+# is explained rather than looking like an accident, and so the view does not hide what individual alerts carry.
+GAP_NOTES = {
+    "Privilege Escalation": "No rule has a headline technique here. Alert level only: D4 tags sudo run by an agent and local privilege "
+                            "persistence with T1548.003; not counted as coverage.",
+    "Collection": "C3 detects collection followed by exfiltration but maps only the credential (T1552.001) and exfiltration techniques; "
+                  "a Collection technique such as T1005 is not mapped yet.",
 }
 SPLIT = " / "
 
@@ -39,7 +47,7 @@ def build(validation: dict | None = None) -> dict:
     for tac in ATTACK_TACTICS:
         techs = sorted((t for t in by_tech.values() if t["framework"] == "attack" and tac in t["tactics"]), key=lambda t: t["id"])
         matrix.append({"tactic": tac, "techniques": techs, "scope": "covered" if techs else ("out of scope" if tac in OUT_OF_SCOPE else "gap"),
-                       "note": OUT_OF_SCOPE.get(tac, "")})
+                       "note": OUT_OF_SCOPE.get(tac) or ("" if techs else GAP_NOTES.get(tac, ""))})
     atlas: dict[str, list] = {}
     for t in sorted((t for t in by_tech.values() if t["framework"] == "atlas"), key=lambda t: t["id"]):
         for tac in t["tactics"]:
@@ -57,6 +65,6 @@ def build(validation: dict | None = None) -> dict:
                    "tactics_gap": sum(m["scope"] == "gap" for m in matrix), "tactics_total": len(ATTACK_TACTICS)},
         "caveat": ("Coverage of the coding-agent attack surface this monitor watches, not of ATT&CK as a whole. The tick means the labelled corpus "
                    "contains attacks that the mapped rule catches. The evidence is per rule, not per technique (a rule that maps to three techniques shows the same count on each), "
-                   "and the corpus is synthetic and written by the rule authors. "
+                   "and the corpus is synthetic and written by the rule authors. Only each rule's headline techniques are counted; some alerts carry extra techniques that are not counted here. "
                    "ATT&CK IDs were checked against ATT&CK v20 (May 2026; v19 revoked the T1562 sub-techniques used earlier) and ATLAS IDs against dataset v5.6.0: re-verify at attack.mitre.org and atlas.mitre.org before external use."),
     }

@@ -35,6 +35,7 @@ def test_coverage_is_computed_from_the_rules_and_states_gaps():
     scopes = {m["tactic"]: m["scope"] for m in v["matrix"]}
     assert scopes["Lateral Movement"] == "out of scope" and scopes["Exfiltration"] == "covered"
     assert all(m["note"] for m in v["matrix"] if m["scope"] == "out of scope")     # a deliberate gap always says why
+    assert all(m["note"] for m in v["matrix"] if m["scope"] == "gap")              # an unplanned gap is explained too
     assert "not of ATT&CK as a whole" in v["caveat"]
 
 
